@@ -26,21 +26,26 @@ export const authConfig = {
         const email = credentials.email as string;
         const password = credentials.password as string;
         
-        const user = await prisma.user.findUnique({
-          where: { email: email },
-        })
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: email },
+          })
 
-        if (!user || !user.hashedPassword) return null
-        
-        const isPasswordValid = await compare(password, user.hashedPassword);
-        
-        if (!isPasswordValid) return null;
-        
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          name: user.name,
-          role: user.role,
+          if (!user || !user.hashedPassword) return null
+          
+          const isPasswordValid = await compare(password, user.hashedPassword);
+          
+          if (!isPasswordValid) return null;
+          
+          return {
+            id: user.id.toString(),
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error('Auth error:', error);
+          return null;
         }
       }
     })
@@ -50,15 +55,19 @@ export const authConfig = {
       if (token.sub && session.user) {
         session.user.id = token.sub
         
-        const user = await prisma.user.findUnique({
-          where: { id: parseInt(token.sub) },
-        })
-        
-        if (user) {
-          const userRole = user.role;
-          if (userRole === 'ADMIN' || userRole === 'TEACHER') {
-            session.user.role = userRole as Roles;
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: parseInt(token.sub) },
+          })
+          
+          if (user) {
+            const userRole = user.role;
+            if (userRole === 'ADMIN' || userRole === 'TEACHER') {
+              session.user.role = userRole as Roles;
+            }
           }
+        } catch (error) {
+          console.error('Session callback error:', error);
         }
       }
       return session
@@ -71,10 +80,18 @@ export const authConfig = {
         }
       }
       return token
+    },
+    async redirect({ url, baseUrl }) {
+      // Permite redirecciones relativas o al mismo dominio
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Permite redirecciones al mismo dominio
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl
     }
   },
   pages: {
     signIn: '/login',
+    error: '/login',
   },
   session: {
     strategy: "jwt",
@@ -88,11 +105,31 @@ export const authConfig = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
+      },
+    },
+    callbackUrl: {
+      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    csrfToken: {
+      name: process.env.NODE_ENV === 'production' ? '__Host-next-auth.csrf-token' : 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
       },
     },
   },
   secret: process.env.AUTH_SECRET,
   trustHost: true, // Importante para Vercel
+  debug: process.env.NODE_ENV === 'development',
 } satisfies NextAuthConfig
 
 export const { handlers, signIn, signOut, auth } = NextAuth(authConfig)

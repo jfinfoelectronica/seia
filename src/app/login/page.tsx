@@ -19,10 +19,47 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [themeLoaded, setThemeLoaded] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
 
   // Asegurar que el componente esté montado y el tema cargado
   useEffect(() => {
     setMounted(true);
+    
+    // Verificar errores en la URL (desde middleware o NextAuth)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlError = urlParams.get('error');
+      const urlMessage = urlParams.get('message');
+      const urlDebug = urlParams.get('debug');
+      
+      if (urlError) {
+        let errorMessage = '';
+        switch (urlError) {
+          case 'AccessDenied':
+            errorMessage = urlMessage || 'No tienes permisos para acceder a esta área';
+            break;
+          case 'MiddlewareError':
+            errorMessage = 'Error de autenticación del servidor';
+            if (urlDebug && process.env.NODE_ENV === 'development') {
+              setDebugInfo(`Debug: ${urlDebug}`);
+            }
+            break;
+          case 'Configuration':
+            errorMessage = 'Error de configuración del servidor';
+            break;
+          case 'Verification':
+            errorMessage = 'Error de verificación de token';
+            break;
+          default:
+            errorMessage = 'Error de autenticación';
+        }
+        setError(errorMessage);
+        
+        // Limpiar la URL sin recargar la página
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
     
     // Esperar a que el tema esté completamente cargado
     const checkTheme = () => {
@@ -58,9 +95,15 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setDebugInfo('');
 
     try {
-      console.log('Attempting login with:', { email });
+      console.log('Attempting login with:', { email, env: process.env.NODE_ENV });
+      
+      // Información de debug para Vercel
+      if (process.env.NODE_ENV === 'development') {
+        setDebugInfo(`Entorno: ${process.env.NODE_ENV}, URL: ${window.location.origin}`);
+      }
       
       const result = await signIn('credentials', {
         redirect: false,
@@ -101,14 +144,45 @@ export default function LoginPage() {
         }
       } else if (result?.error) {
         console.log('SignIn error:', result.error);
-        setError('Credenciales inválidas. Por favor, inténtalo de nuevo.');
+        
+        // Manejo específico de errores de NextAuth
+        let errorMessage = '';
+        switch (result.error) {
+          case 'CredentialsSignin':
+            errorMessage = 'Credenciales inválidas. Verifica tu email y contraseña.';
+            break;
+          case 'Configuration':
+            errorMessage = 'Error de configuración del servidor. Contacta al administrador.';
+            if (process.env.NODE_ENV === 'development') {
+              setDebugInfo('Error de configuración de NextAuth');
+            }
+            break;
+          case 'AccessDenied':
+            errorMessage = 'Acceso denegado. No tienes permisos para acceder.';
+            break;
+          case 'Verification':
+            errorMessage = 'Error de verificación. Intenta nuevamente.';
+            break;
+          default:
+            errorMessage = `Error de autenticación: ${result.error}`;
+            if (process.env.NODE_ENV === 'development') {
+              setDebugInfo(`Error específico: ${result.error}`);
+            }
+        }
+        setError(errorMessage);
       } else {
         console.log('Unexpected result:', result);
         setError('Ocurrió un error inesperado. Por favor, inténtalo de nuevo.');
+        if (process.env.NODE_ENV === 'development') {
+          setDebugInfo(`Resultado inesperado: ${JSON.stringify(result)}`);
+        }
       }
     } catch (error) {
       console.error('Error durante el login:', error);
       setError('Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.');
+      if (process.env.NODE_ENV === 'development') {
+        setDebugInfo(`Error de excepción: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -191,6 +265,15 @@ export default function LoginPage() {
                   <AlertCircle className="h-4 w-4 text-destructive" />
                   <AlertDescription className="text-destructive font-medium">
                     {error}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {debugInfo && process.env.NODE_ENV === 'development' && (
+                <Alert className="border-yellow-500/50 bg-yellow-50/10">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-700 font-mono text-xs">
+                    {debugInfo}
                   </AlertDescription>
                 </Alert>
               )}
