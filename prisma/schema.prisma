@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Area {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+model User {
+  id            Int          @id @default(autoincrement())
+  name          String?
+  email         String       @unique
+  emailVerified DateTime?
+  image         String?
+  hashedPassword String?
+  role          String?      // 'ADMIN' o 'TEACHER'
+  firstName     String?
+  lastName      String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  geminiApiKey  String?      @db.Text
+  useGlobalApiKey Boolean    @default(false)
+  evaluationLimit Int        @default(5)
+  evaluations   Evaluation[] @relation("EvaluationAuthor")
+  areaId        Int?
+  area          Area?        @relation(fields: [areaId], references: [id])
+  identification String?     @unique
+  accounts      Account[]
+  sessions      Session[]
+}
+
+// Modelo para Evaluación
+model Evaluation {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  helpUrl     String? // URL de ayuda o recursos adicionales
+  authorId    Int
+  author      User       @relation("EvaluationAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  questions   Question[] @relation("EvaluationQuestions")
+  attempts    Attempt[]  @relation("EvaluationAttempts")
+}
+
+// Modelo para Pregunta
+model Question {
+  id           Int        @id @default(autoincrement())
+  evaluationId Int
+  evaluation   Evaluation @relation("EvaluationQuestions", fields: [evaluationId], references: [id], onDelete: Cascade)
+  text         String     @db.Text // Contenido del editor markdown
+  type         String //"Code", "Text".
+  language     String? // Lenguaje de programación para preguntas de tipo CODE
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  answers      Answer[]   @relation("QuestionAnswers")
+}
+
+// Modelo para Intento (Attempt)
+model Attempt {
+  id             Int          @id @default(autoincrement())
+  evaluationId   Int
+  evaluation     Evaluation   @relation("EvaluationAttempts", fields: [evaluationId], references: [id], onDelete: Cascade)
+  uniqueCode     String       @unique @db.VarChar(8) // Código de 8 caracteres
+  startTime      DateTime
+  endTime        DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  submissions    Submission[] @relation("AttemptSubmissions")
+}
+
+// Modelo para Presentación (Submission)
+model Submission {
+  id              Int       @id @default(autoincrement())
+  attemptId       Int
+  attempt         Attempt   @relation("AttemptSubmissions", fields: [attemptId], references: [id], onDelete: Cascade)
+  firstName       String // Nombre del estudiante
+  lastName        String // Apellido del estudiante
+  email           String // Correo electrónico del estudiante
+  score           Float? // Calificación (añadido previamente)
+  timeOutsideEval Int       @default(0) // Tiempo acumulado (en segundos) que el estudiante permanece fuera de la evaluación
+  submittedAt     DateTime? // Fecha y hora de envío
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  answersList     Answer[]  @relation("SubmissionAnswers")
+  deviceId        String?   // Identificador único de dispositivo/sesión
+}
+
+// Modelo para Respuesta (Answer)
+model Answer {
+  id           Int        @id @default(autoincrement())
+  submissionId Int
+  submission   Submission @relation("SubmissionAnswers", fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId   Int
+  question     Question   @relation("QuestionAnswers", fields: [questionId], references: [id], onDelete: Cascade)
+  answer       String     @db.Text // Respuesta del estudiante
+  score        Float? // Puntuación específica de esta respuesta (opcional)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model GlobalSettings {
+  id              Int      @id @default(autoincrement())
+  geminiApiKey    String   @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// NextAuth.js Models
+model Account {
+  id                 String  @id @default(cuid())
+  userId             Int
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
