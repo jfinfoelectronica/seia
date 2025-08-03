@@ -1,6 +1,6 @@
 import dynamic from 'next/dynamic';
 import { useMonacoConfig } from '@/app/student/evaluation/hooks/useMonacoConfig';
-import { useSecurityMeasures } from '@/app/student/evaluation/hooks/useSecurityMeasures';
+import { useInputSecurity } from '../hooks/useInputSecurity';
 import { ShadowCodeEditor } from './shadow-code-editor';
 import React, { useRef } from 'react';
 import type { editor } from 'monaco-editor';
@@ -32,7 +32,12 @@ export const CodeEditor = ({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
   // Activar medidas de seguridad para detectar inyecciones
-  useSecurityMeasures(editorRef, 'monaco');
+  const { setupKeyboardListeners, setupClipboardBlocking } = useInputSecurity({
+    onSecurityViolation: () => {
+      console.warn('[SECURITY] Violación de seguridad detectada en editor Monaco');
+      // Aquí podrías redirigir o tomar otras acciones de seguridad
+    }
+  });
 
   // Si useShadowDOM está habilitado, usar el componente protegido
   if (useShadowDOM) {

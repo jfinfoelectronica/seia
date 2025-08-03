@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { ShadowTextarea } from './shadow-textarea';
-import { useSecurityMeasures } from '../hooks/useSecurityMeasures';
+import { useInputSecurity } from '../hooks/useInputSecurity';
 
 interface SecureTextareaProps {
   value: string;
@@ -27,7 +27,12 @@ export const SecureTextarea: React.FC<SecureTextareaProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Aplicar medidas de seguridad
-  useSecurityMeasures(textareaRef, 'textarea');
+  const { setupKeyboardListeners, setupClipboardBlocking } = useInputSecurity({
+    onSecurityViolation: () => {
+      console.warn('[SECURITY] Violación de seguridad detectada en textarea');
+      // Aquí podrías redirigir o tomar otras acciones de seguridad
+    }
+  });
 
   // Si useShadowDOM está habilitado, usar el componente protegido
   if (useShadowDOM) {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useShadowDOM } from '../hooks/useShadowDOM';
-import { useSecurityMeasures } from '../hooks/useSecurityMeasures';
+import { useInputSecurity } from '../hooks/useInputSecurity';
 
 interface ShadowTextareaProps {
   value: string;
@@ -26,7 +26,16 @@ export const ShadowTextarea: React.FC<ShadowTextareaProps> = ({
   const [internalValue, setInternalValue] = useState(value);
 
   // Aplicar medidas de seguridad
-  useSecurityMeasures(textareaRef, 'textarea');
+  const { setupKeyboardListeners, setupClipboardBlocking, validateValueChange } = useInputSecurity({
+    onSecurityViolation: () => {
+      console.warn('[SECURITY] Violación de seguridad detectada en Shadow Textarea');
+      // Disparar evento de fraude detectado
+      const fraudEvent = new CustomEvent('fraud-detected', {
+        detail: { type: 'security-violation', source: 'textarea' }
+      });
+      window.dispatchEvent(fraudEvent);
+    }
+  });
 
   useEffect(() => {
     if (!shadowRoot || !isReady) return;

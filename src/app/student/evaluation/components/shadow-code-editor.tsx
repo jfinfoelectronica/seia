@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useShadowDOM } from '../hooks/useShadowDOM';
-import { useSecurityMeasures } from '../hooks/useSecurityMeasures';
+import { useInputSecurity } from '../hooks/useInputSecurity';
 import { useMonacoConfig } from '../hooks/useMonacoConfig';
 import type { editor } from 'monaco-editor';
 
@@ -27,7 +27,16 @@ export const ShadowCodeEditor: React.FC<ShadowCodeEditorProps> = ({
   const { getEditorOptions, currentTheme } = useMonacoConfig();
 
   // Aplicar medidas de seguridad
-  useSecurityMeasures(editorRef, 'monaco');
+  const { setupKeyboardListeners, setupClipboardBlocking, validateValueChange } = useInputSecurity({
+    onSecurityViolation: () => {
+      console.warn('[SECURITY] Violación de seguridad detectada en Shadow Monaco Editor');
+      // Disparar evento de fraude detectado
+      const fraudEvent = new CustomEvent('fraud-detected', {
+        detail: { type: 'security-violation', source: 'monaco' }
+      });
+      window.dispatchEvent(fraudEvent);
+    }
+  });
 
   // Lenguajes que soportan formateo
   const FORMATTABLE_LANGUAGES = [
