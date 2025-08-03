@@ -52,7 +52,20 @@ export function UserMenu() {
         <DropdownMenuItem asChild>
           <button
             className="w-full cursor-pointer"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={async () => {
+              try {
+                console.log('Iniciando cierre de sesión...');
+                await signOut({ 
+                  callbackUrl: "/",
+                  redirect: true 
+                });
+                console.log('Cierre de sesión completado');
+              } catch (error) {
+                console.error('Error durante el cierre de sesión:', error);
+                // Fallback: forzar redirección manual
+                window.location.href = '/';
+              }
+            }}
           >
             <LogOut className="mr-2 h-4 w-4" />
             <span>Cerrar sesión</span>

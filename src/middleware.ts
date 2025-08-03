@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
     // Rutas públicas que no requieren autenticación
     const publicPaths = [
       '/login', 
-      '/api/auth',
+      '/api/auth', // Todas las rutas de NextAuth
       '/', // Página principal es pública
       '/student', // Rutas de estudiante son públicas
       '/_next', // Archivos estáticos de Next.js

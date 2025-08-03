@@ -105,7 +105,7 @@ export const authConfig = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
+        // Removemos el domain específico para evitar problemas con el cierre de sesión
       },
     },
     callbackUrl: {
