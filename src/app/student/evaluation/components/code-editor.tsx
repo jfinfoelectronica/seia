@@ -32,7 +32,7 @@ export const CodeEditor = ({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
   // Activar medidas de seguridad para detectar inyecciones
-  const { setupKeyboardListeners, setupClipboardBlocking } = useInputSecurity({
+  useInputSecurity({
     onSecurityViolation: () => {
       console.warn('[SECURITY] Violación de seguridad detectada en editor Monaco');
       // Aquí podrías redirigir o tomar otras acciones de seguridad

@@ -32,7 +32,7 @@ export const useShadowDOM = (options: ShadowDOMOptions = { mode: 'closed', deleg
             return Array.from(sheet.cssRules)
               .map(rule => rule.cssText)
               .join('\n');
-          } catch (e) {
+          } catch {
             // Algunos stylesheets pueden tener restricciones CORS
             return '';
           }
@@ -119,7 +119,6 @@ export const useShadowDOM = (options: ShadowDOMOptions = { mode: 'closed', deleg
       });
 
       // Bloquear métodos que podrían exponer el Shadow DOM
-      const originalAttachShadow = hostRef.current.attachShadow;
       hostRef.current.attachShadow = () => {
         throw new Error('Shadow DOM access denied');
       };
@@ -128,8 +127,9 @@ export const useShadowDOM = (options: ShadowDOMOptions = { mode: 'closed', deleg
 
       // Cleanup
       return () => {
-        if (hostRef.current) {
-          hostRef.current.removeAttribute('data-protected');
+        const currentHost = hostRef.current;
+        if (currentHost) {
+          currentHost.removeAttribute('data-protected');
         }
         setIsReady(false);
       };
@@ -157,7 +157,7 @@ export const useShadowDOM = (options: ShadowDOMOptions = { mode: 'closed', deleg
             return Array.from(sheet.cssRules)
               .map(rule => rule.cssText)
               .join('\n');
-          } catch (e) {
+          } catch {
             return '';
           }
         })

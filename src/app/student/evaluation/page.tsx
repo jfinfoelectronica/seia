@@ -161,7 +161,7 @@ function EvaluationContent() {
   });
 
   // Sistema de seguridad para detectar entrada no autorizada
-  const { validateValueChange, setupKeyboardListeners, setupClipboardBlocking } = useInputSecurity({
+  const { validateValueChange } = useInputSecurity({
     onSecurityViolation: () => {
       router.push('/student/security-violation');
     },
@@ -1074,8 +1074,6 @@ function EvaluationContent() {
                       overflowY: 'auto'
                     }}
                     spellCheck={true}
-                    setupKeyboardListeners={setupKeyboardListeners}
-                    setupClipboardBlocking={setupClipboardBlocking}
                   />
                 </div>
               )}

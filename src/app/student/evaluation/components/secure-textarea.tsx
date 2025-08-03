@@ -12,6 +12,7 @@ interface SecureTextareaProps {
   useShadowDOM?: boolean;
   rows?: number;
   disabled?: boolean;
+  spellCheck?: boolean;
 }
 
 export const SecureTextarea: React.FC<SecureTextareaProps> = ({
@@ -22,12 +23,13 @@ export const SecureTextarea: React.FC<SecureTextareaProps> = ({
   style,
   useShadowDOM = true,
   rows = 4,
-  disabled = false
+  disabled = false,
+  spellCheck = false
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Aplicar medidas de seguridad
-  const { setupKeyboardListeners, setupClipboardBlocking } = useInputSecurity({
+  useInputSecurity({
     onSecurityViolation: () => {
       console.warn('[SECURITY] Violación de seguridad detectada en textarea');
       // Aquí podrías redirigir o tomar otras acciones de seguridad
@@ -45,6 +47,7 @@ export const SecureTextarea: React.FC<SecureTextareaProps> = ({
         style={style}
         rows={rows}
         disabled={disabled}
+        spellCheck={spellCheck}
       />
     );
   }
@@ -59,6 +62,7 @@ export const SecureTextarea: React.FC<SecureTextareaProps> = ({
       className={className}
       rows={rows}
       disabled={disabled}
+      spellCheck={spellCheck}
       style={{
         ...style,
         userSelect: 'none',

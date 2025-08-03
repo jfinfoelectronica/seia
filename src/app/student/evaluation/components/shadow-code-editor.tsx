@@ -27,7 +27,7 @@ export const ShadowCodeEditor: React.FC<ShadowCodeEditorProps> = ({
   const { getEditorOptions, currentTheme } = useMonacoConfig();
 
   // Aplicar medidas de seguridad
-  const { setupKeyboardListeners, setupClipboardBlocking, validateValueChange } = useInputSecurity({
+  useInputSecurity({
     onSecurityViolation: () => {
       console.warn('[SECURITY] Violación de seguridad detectada en Shadow Monaco Editor');
       // Disparar evento de fraude detectado

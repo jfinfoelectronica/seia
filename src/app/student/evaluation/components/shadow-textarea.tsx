@@ -10,6 +10,7 @@ interface ShadowTextareaProps {
   style?: React.CSSProperties;
   rows?: number;
   disabled?: boolean;
+  spellCheck?: boolean;
 }
 
 export const ShadowTextarea: React.FC<ShadowTextareaProps> = ({
@@ -19,14 +20,15 @@ export const ShadowTextarea: React.FC<ShadowTextareaProps> = ({
   className = '',
   style = {},
   rows = 4,
-  disabled = false
+  disabled = false,
+  spellCheck = false
 }) => {
   const { hostRef, shadowRoot, isReady } = useShadowDOM({ mode: 'closed', delegatesFocus: true });
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [internalValue, setInternalValue] = useState(value);
 
   // Aplicar medidas de seguridad
-  const { setupKeyboardListeners, setupClipboardBlocking, validateValueChange } = useInputSecurity({
+  useInputSecurity({
     onSecurityViolation: () => {
       console.warn('[SECURITY] Violación de seguridad detectada en Shadow Textarea');
       // Disparar evento de fraude detectado
@@ -46,6 +48,7 @@ export const ShadowTextarea: React.FC<ShadowTextareaProps> = ({
     textarea.placeholder = placeholder;
     textarea.rows = rows;
     textarea.disabled = disabled;
+    textarea.spellcheck = spellCheck;
     
     // Aplicar clases y estilos
     textarea.className = `shadow-textarea ${className}`;
